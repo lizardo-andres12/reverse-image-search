@@ -1,6 +1,8 @@
+import asyncio
 import io
 import logging
 
+from functools import partial
 from fastapi import HTTPException, UploadFile
 from ml import CLIPModelService
 from models import SearchResponse, SimilarImage
@@ -27,10 +29,6 @@ class SearchController:
         self.vector_repository = vector_repository
         self.image_repository = image_repository
 
-        if not self.clip_service.is_ready():
-            if not self.clip_service.load_model():
-                raise RuntimeError("Failed to load CLIP model")
-
     async def search(self, file: UploadFile, limit: int) -> SearchResponse:
         """
         Performs file conversion to a vector and searches for similar images.
@@ -42,10 +40,14 @@ class SearchController:
             SearchResponse: The top (limit) many keywords and images.
         """
         try:
+            loop = asyncio.get_event_loop()
             self._validate_upload(file)
 
             image = await self._process_file_upload(file)
-            features = self._extract_features(image)
+            features = await loop.run_in_executor(
+                None,
+                partial(self._extract_features, image)
+            )
 
             similar_vectors = self._search_similar_vectors(features, limit)
             similar_images = self._fetch_image_metadata(similar_vectors)
@@ -74,7 +76,7 @@ class SearchController:
         if not file.content_type or not file.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="File must be an image")
 
-        if not file.size or file.size > MAX_SIZE:
+        if file.size and file.size > MAX_SIZE:
             raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
         if not file.filename:
@@ -92,9 +94,11 @@ class SearchController:
 
         try:
             contents = await file.read()
+            await file.close()
             image = Image.open(io.BytesIO(contents)).convert("RGB")
             return image
         except Exception as e:
+            await file.close()
             raise HTTPException(
                 status_code=400, detail="Invalid or corrupted image file"
             )

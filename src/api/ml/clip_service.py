@@ -112,7 +112,7 @@ class CLIPModelService:
             batch_num = (i // batch_size) + 1
 
             batch = images[i : i + batch_size]
-            batch_results = [None] * batch_size
+            batch_results = [None] * len(batch)
 
             try:
                 processed_images = []
@@ -167,6 +167,8 @@ class CLIPModelService:
 
             self.model.to(self.device)  # type: ignore[arg-type]
             self.model.eval()
+            if self.device == 'cuda':
+                self.model = torch.compile(self.model)
 
             self._is_loaded = True
             return True
