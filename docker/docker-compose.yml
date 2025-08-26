@@ -1,0 +1,77 @@
+services:
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ris-chromadb
+    ports:
+      - "8000:8001"
+    volumes:
+      - ../data/chroma:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_AUTH_PROVIDER=chromadb.auth.token.TokenAuthServerProvider
+      - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_SERVER_AUTH_TOKEN}
+      - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=CHROMA_TOKEN
+      - ANONYMIZED_TELEMETRY=False
+    networks:
+      - ris-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/heartbeat"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: ris-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../data/postgres:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=md5
+    networks:
+      - ris-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+  
+  redis:
+    image: redis:7-alpine
+    container_name: ris-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ../data/redis:/data
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfilename "redis-ris.aof"
+      --dir /data
+      --bind 0.0.0.0
+      --loglevel notice
+      --requirepass ${REDIS_PASSWORD}
+    networks:
+      - ris-network
+    healthcheck:
+      test: ["CMD", "redis-cli -a ${REDIS_PASSWORD}", "ping"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+networks:
+  ris-network:
+    driver: bridge
+    name: ris-network
