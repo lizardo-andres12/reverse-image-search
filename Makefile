@@ -5,12 +5,13 @@ all:
 
 format:
 	@echo "[Makefile] formatting..."
-	@black .
+	@black src/
 	@echo "[Makefile] sorting imports..."
+	@isort src/
 
 lint:
 	@echo "[Makefile] running static analyzer..."
-	@mypy .
+	@mypy src/
 
 fl: format lint
 	@format

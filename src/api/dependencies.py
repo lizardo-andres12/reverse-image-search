@@ -24,8 +24,8 @@ def get_image_repo() -> ImageRepository:
 
 @lru_cache
 def get_search_controller(
-    clip_service: CLIPModelService= Depends(get_clip_service),
-    vector_repo: VectorRepository= Depends(get_vector_repo),
+    clip_service: CLIPModelService = Depends(get_clip_service),
+    vector_repo: VectorRepository = Depends(get_vector_repo),
     image_repo: ImageRepository = Depends(get_image_repo),
 ) -> SearchController:
     return SearchController(

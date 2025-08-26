@@ -1,14 +1,13 @@
 import asyncio
 import io
 import logging
-
 from functools import partial
+
 from fastapi import HTTPException, UploadFile
 from ml import CLIPModelService
 from models import SearchResponse, SimilarImage
 from PIL import Image
 from repository import ImageRepository, VectorRepository
-
 
 logger = logging.getLogger(__name__)
 MAX_SIZE = 10 * 1024 * 1024
@@ -45,8 +44,7 @@ class SearchController:
 
             image = await self._process_file_upload(file)
             features = await loop.run_in_executor(
-                None,
-                partial(self._extract_features, image)
+                None, partial(self._extract_features, image)
             )
 
             similar_vectors = self._search_similar_vectors(features, limit)
