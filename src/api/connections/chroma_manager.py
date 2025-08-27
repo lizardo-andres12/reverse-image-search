@@ -13,6 +13,7 @@ class ChromaConnectionManager:
         self.headers = {"CHROMA_TOKEN": config.CHROMA_SERVER_AUTH_TOKEN}
 
     def initialize_connection(self):
+        print(self.host, self.port, self.headers)
         self.client = chromadb.HttpClient(
             host=self.host, port=self.port, headers=self.headers
         )

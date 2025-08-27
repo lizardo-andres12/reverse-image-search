@@ -1,7 +1,8 @@
 from functools import lru_cache
 
+from connections import (ChromaConnectionManager, PostgresConnectionManager,
+                         RedisConnectionManager)
 from controller import SearchController
-from connections import ChromaConnectionManager, RedisConnectionManager, PostgresConnectionManager
 from fastapi import Depends, Request
 from ml import CLIPModelService
 from repository import ImageRepository, VectorRepository
@@ -29,12 +30,18 @@ def get_clip_service() -> CLIPModelService:
 
 
 @lru_cache
-def get_vector_repo(chroma_manager: ChromaConnectionManager = Depends(get_chroma_manager), redis_manager: RedisConnectionManager = Depends(get_redis_manager)) -> VectorRepository:
+def get_vector_repo(
+    chroma_manager: ChromaConnectionManager = Depends(get_chroma_manager),
+    redis_manager: RedisConnectionManager = Depends(get_redis_manager),
+) -> VectorRepository:
     return VectorRepository()
 
 
 @lru_cache
-def get_image_repo(postgres_manager: PostgresConnectionManager = Depends(get_postgres_manager), redis_manager: RedisConnectionManager = Depends(get_redis_manager)) -> ImageRepository:
+def get_image_repo(
+    postgres_manager: PostgresConnectionManager = Depends(get_postgres_manager),
+    redis_manager: RedisConnectionManager = Depends(get_redis_manager),
+) -> ImageRepository:
     return ImageRepository()
 
 

@@ -4,8 +4,9 @@ from contextlib import asynccontextmanager
 from config import DatabaseConfig
 from connections import (ChromaConnectionManager, PostgresConnectionManager,
                          RedisConnectionManager)
-from dependencies import get_clip_service
-from fastapi import FastAPI
+from dependencies import get_clip_service, get_postgres_manager
+from fastapi import Depends, FastAPI
+from handler import search_router
 
 
 @asynccontextmanager
@@ -22,8 +23,8 @@ async def lifespan(app: FastAPI):
 
     # Init db conns
     chromadb_manager.initialize_connection()
-    redis_manager.initalize_connection()
-    pg_manager.initialize_connection()
+    redis_manager.initialize_connection()
+    await pg_manager.initialize_connection()
 
     # Load model on startup
     clip_service = get_clip_service()
@@ -43,3 +44,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/healthcheck")
+async def healthcheck(pg: PostgresConnectionManager = Depends(get_postgres_manager)):
+    pg_health = await pg.healthcheck()
+    return {"All": pg_health}
+
+
+app.include_router(search_router, prefix="/api")

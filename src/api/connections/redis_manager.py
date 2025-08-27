@@ -16,7 +16,7 @@ class RedisConnectionManager:
             decode_responses=True,
         )
 
-    def initalize_connection(self):
+    def initialize_connection(self):
         self.client = aioredis.Redis(connection_pool=self.pool)
 
     async def close_connection(self):

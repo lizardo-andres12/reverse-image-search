@@ -24,6 +24,8 @@ class DatabaseConfig(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: int
     POSTGRES_DB: str
+    POSTGRES_MIN_CONNECTIONS: int
+    POSTGRES_MAX_CONNECTIONS: int
 
     # Redis
     REDIS_HOST: str
@@ -36,8 +38,7 @@ class DatabaseConfig(BaseSettings):
     CHROMA_PORT: int
     CHROMA_SERVER_AUTH_TOKEN: str
 
-    @classmethod
-    def get_postgres_url(cls, async_mode: bool = False) -> str:
+    def get_postgres_url(self) -> str:
         """
         Get Postgres connection DSN
 
@@ -46,25 +47,18 @@ class DatabaseConfig(BaseSettings):
         Returns:
             str: DSN connection URL
         """
-        password = quote_plus(cls.POSTGRES_PASSWORD)
+        password = quote_plus(self.POSTGRES_PASSWORD)
 
-        if async_mode:
-            return (
-                f"postgresql+asyncpg://{cls.POSTGRES_USER}:{password}@"
-                f"{cls.POSTGRES_HOST}:{cls.POSTGRES_PORT}/{cls.POSTGRES_DB}"
-            )
-        else:
-            return (
-                f"postgresql://{cls.POSTGRES_USER}:{password}@"
-                f"{cls.POSTGRES_HOST}:{cls.POSTGRES_PORT}/{cls.POSTGRES_DB}"
-            )
+        return (
+            f"postgresql://{self.POSTGRES_USER}:{password}@"
+            f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
-    @classmethod
-    def get_redis_url(cls) -> str:
+    def get_redis_url(self) -> str:
         """
         Get Redis connection DSN
 
         Returns:
             str: DSN connection URL
         """
-        return f"redis://:{cls.REDIS_PASSWORD}@{cls.REDIS_HOST}:{cls.REDIS_PORT}/{cls.REDIS_DB}"
+        return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
