@@ -4,36 +4,37 @@ from urllib.parse import quote_plus
 import chromadb
 import redis
 from chromadb.config import Settings
-from pydantic_settings import BaseSettings
-from dotenv import load_dotenv
-
-load_dotenv("docker/.env")
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseConfig(BaseSettings):
     """Central configuration wrapper for database connection opts. Missing opts cause errors."""
 
+    # .env parse config
+    model_config = SettingsConfigDict(
+        env_file='docker/.env',
+        env_file_encoding='utf-8',
+        case_sensitive=True,
+        extra='ignore'
+    )
+
     # Postgres
-    POSTGRES_USER = os.getenv("POSTGRES_USER")
-    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-    POSTGRES_HOST = os.getenv("POSTGRES_HOST")
-    POSTGRES_PORT = os.getenv("POSTGRES_PORT")
-    POSTGRES_DB = os.getenv("POSTGRES_DB")
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int
+    POSTGRES_DB: str
 
     # Redis
-    REDIS_HOST = os.getenv("REDIS_HOST")
-    REDIS_PORT = os.getenv("REDIS_PORT")
-    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
-    REDIS_DB = os.getenv("REDIS_HOST")
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_PASSWORD: str
+    REDIS_DB: str
 
     # ChromaDB
-    CHROMA_HOST = os.getenv("CHROMA_HOST")
-    CHROMA_PORT = os.getenv("CHROMA_PORT")
-    CHROMA_AUTH_TOKEN = os.getenv("CHROMA_SERVER_AUTH_TOKEN")
-
-    class Config:
-        env_file = 'docker/.env'
-        case_sensitive = True
+    CHROMA_HOST: str
+    CHROMA_PORT: int
+    CHROMA_SERVER_AUTH_TOKEN: str
 
     @classmethod
     def get_postgres_url(cls, async_mode: bool = False) -> str:
@@ -67,3 +68,6 @@ class DatabaseConfig(BaseSettings):
             str: DSN connection URL
         """
         return f"redis://:{cls.REDIS_PASSWORD}@{cls.REDIS_HOST}:{cls.REDIS_PORT}/{cls.REDIS_DB}"
+
+if __name__ == '__main__':
+    _ = DatabaseConfig()
