@@ -12,10 +12,10 @@ class DatabaseConfig(BaseSettings):
 
     # .env parse config
     model_config = SettingsConfigDict(
-        env_file='docker/.env',
-        env_file_encoding='utf-8',
+        env_file="docker/.env",
+        env_file_encoding="utf-8",
         case_sensitive=True,
-        extra='ignore'
+        extra="ignore",
     )
 
     # Postgres
@@ -68,6 +68,3 @@ class DatabaseConfig(BaseSettings):
             str: DSN connection URL
         """
         return f"redis://:{cls.REDIS_PASSWORD}@{cls.REDIS_HOST}:{cls.REDIS_PORT}/{cls.REDIS_DB}"
-
-if __name__ == '__main__':
-    _ = DatabaseConfig()
