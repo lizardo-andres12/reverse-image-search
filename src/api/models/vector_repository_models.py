@@ -4,12 +4,14 @@ from pydantic import BaseModel
 class VectorEntry(BaseModel):
     """Models one entry into the vector database"""
 
-    uuid: str
+    id: str
     embedding: tuple[float]
+    metadata: dict[str, str]
 
 
 class QueryHit(BaseModel):
     """Models a query hit"""
 
-    uuid: str
+    id: str
+    metadata: dict[str, str]
     similarity: float

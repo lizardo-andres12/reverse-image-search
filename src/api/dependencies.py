@@ -10,7 +10,7 @@ from repository import ImageRepository, VectorRepository
 
 @lru_cache
 def get_chroma_manager(request: Request):
-    return request.app.state.chroma_manager
+    return request.app.state.chromadb_manager
 
 
 @lru_cache
