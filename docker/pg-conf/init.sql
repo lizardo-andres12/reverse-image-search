@@ -10,7 +10,7 @@ create table if not exists images (
 );
 
 create table if not exists image_tags (
-    id serial primary key
+    id serial primary key,
     image_uuid UUID not null references images(uuid) on delete cascade,
     tag varchar(63) not null,
     confidence float not null,
@@ -18,4 +18,4 @@ create table if not exists image_tags (
 );
 
 create index idx_image_tags_uuid on image_tags(image_uuid);
-create index idx_image_tags_taf on image_tags(tag);
+create index idx_image_tags_tag on image_tags(tag);

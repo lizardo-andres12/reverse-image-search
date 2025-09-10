@@ -5,7 +5,7 @@ from connections import ChromaConnectionManager
 from models import QueryHit, VectorEntry
 from pydantic import BaseModel, ValidationError
 
-class VectorRepository:
+class VectorRepository: #TODO: implement caching
     """
     Encapsulates ChromaDB access functionality
     
@@ -117,7 +117,7 @@ class VectorRepository:
             include=self.QUERY_INCLUDE
         )
 
-        return self._parse_results_object(results)
+        results = self._parse_results_object(results)
 
 
     def _get_entries(self, ids: list[str]) -> list[str]:
@@ -149,23 +149,24 @@ class VectorRepository:
             results (QueryResult): The result object returned by *.query calls.
         Returns:
             list[tuple[list[QueryHit], list[ValidationError]]]: The list of result pairs.
-            list[QueryHit]: The parsed results.
-            list[ValidationError]: The parsing errors.
+            list[QueryHit]: The parsed results in the order they were returned.
+            list[ValidationError]: The parsing errors in the order they were returned.
         """
         num_queries = len(results[self.IDS_KEY])
         result_pairs: list[tuple[list[QueryHit], list[ValidationError]]] = []
 
         for i in range(num_queries):
-            query_hits: list[QueryHit] = []
-            errors: list[ValidationError] = []
+            num_results = len(results[self.IDS_KEY][i])
+            query_hits: list[QueryHit] = [None] * num_results
+            errors: list[ValidationError] = [None] * num_results
 
-            for id, metadata, similarity in zip(results[self.IDS_KEY][i], results[self.METADATAS_KEY][i], results[self.DISTANCES_KEY][i]):
+            for idx, id, metadata, similarity in enumerate(zip(results[self.IDS_KEY][i], results[self.METADATAS_KEY][i], results[self.DISTANCES_KEY][i])):
                 try:
                     # FIXME: replace hardcoding with metadata
                     hit = QueryHit(id=id, metadata={'str': 'test'}, similarity=similarity)
-                    query_hits.append(hit)
+                    query_hits[idx] = hit
                 except ValidationError as e:
-                    errors.append(e)
+                    errors[idx] = e
             
             result_pairs.append((query_hits, errors))
         return result_pairs

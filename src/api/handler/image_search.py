@@ -21,5 +21,4 @@ async def search(
         SearchResponse: The SearchResponse model containing keywords related to image and
         a list of images bounded by limit. If an error occurs, an HTTPException will be raised
     """
-
     return await search_controller.search(file, limit)

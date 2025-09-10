@@ -5,7 +5,7 @@ from functools import partial
 
 from fastapi import HTTPException, UploadFile
 from ml import CLIPModelService
-from models import SearchResponse, SimilarImage
+from models import SearchResponse, SimilarImage, QueryHit
 from PIL import Image
 from repository import ImageRepository, VectorRepository
 
@@ -43,11 +43,11 @@ class SearchController:
             self._validate_upload(file)
 
             image = await self._process_file_upload(file)
-            features = await loop.run_in_executor(
+            embedding = await loop.run_in_executor(
                 None, partial(self._extract_features, image)
             )
 
-            similar_vectors = self._search_similar_vectors(features, limit)
+            similar_vectors = self._search_similar_vectors(embedding, limit)
             similar_images = self._fetch_image_metadata(similar_vectors)
             keywords = self._generate_keywords(similar_images)
 
@@ -110,7 +110,6 @@ class SearchController:
         Returns:
             list: The CLIP vector embeddings as python list from numpy array
         """
-
         try:
             features = self.clip_service.extract_image_features(image)
             if not features:
@@ -126,17 +125,18 @@ class SearchController:
                 status_code=500, detail="Failed to extract image features"
             )
 
-    def _search_similar_vectors(self, features: list, limit: int) -> list[dict]:
+    def _search_similar_vectors(self, embedding: list[float], limit: int) -> list[SimilarImage]:
         """
         Search for similar vectors in ChromaDB. Uses cosine similarity to find matches.
 
         Args:
-            features (list): Vector embedding list to perform cosine similarity on.
+            embedding (list): Vector embedding list to perform cosine similarity on.
             limit (int): Upper bound of images to return.
         Returns:
             list[dict]: List of image uuids and corresponding vector embeddings.
         """
-        pass
+        results = self.vector_repository.query_similar(embedding, limit)
+
 
     def _fetch_image_metadata(self, similar_vectors: list[dict]) -> list[SimilarImage]:
         """

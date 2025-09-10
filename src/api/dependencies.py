@@ -31,10 +31,10 @@ def get_clip_service() -> CLIPModelService:
 
 @lru_cache
 def get_vector_repo(
-    chroma_manager: ChromaConnectionManager = Depends(get_chroma_manager),
+    chromadb_manager: ChromaConnectionManager = Depends(get_chroma_manager),
     redis_manager: RedisConnectionManager = Depends(get_redis_manager),
 ) -> VectorRepository:
-    return VectorRepository()
+    return VectorRepository(chromadb_manager)
 
 
 @lru_cache

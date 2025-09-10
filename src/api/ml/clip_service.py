@@ -35,11 +35,9 @@ class CLIPModelService:
 
         Args:
             image (Image.Image): The PIL Image object.
-
         Returns:
             np.ndarray | None: Normalized feature vector as numpy array or None if there is a failure.
         """
-
         if not self.is_ready():
             logger.error("Model not loaded. Call load_model() first.")
             return None
@@ -100,7 +98,6 @@ class CLIPModelService:
             list[np.ndarray | None] | None: List of feature vectors (or None for failed extractions)
             in the same input order or None if the model was not loaded at invocation.
         """
-
         if not self.is_ready():
             logger.error("Model not loaded. Call load_model() first.")
             return None
@@ -156,7 +153,6 @@ class CLIPModelService:
         Returns:
             bool: True if model loads successfully, False otherwise
         """
-
         try:
             self.model = CLIPModel.from_pretrained(
                 self.config.model_name, cache_dir=self.config.cache_dir
@@ -179,10 +175,12 @@ class CLIPModelService:
 
     def is_ready(self) -> bool:
         """Convenience method to check if model is ready for use."""
+
         return self._is_loaded and self.model is not None and self.processor is not None
 
     def unload_model(self):
         """Unload model and clear caches."""
+
         if self.model:
             del self.model
             self.model = None
