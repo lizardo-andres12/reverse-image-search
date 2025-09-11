@@ -6,7 +6,7 @@ create table if not exists images (
     file_size integer not null,
     dimensions varchar(20) not null,
     created_at timestamp default NOW(),
-    indexed_at timestamp
+    indexed_at timestamp default NOW()
 );
 
 create table if not exists image_tags (
