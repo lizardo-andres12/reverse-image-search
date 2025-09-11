@@ -1,14 +1,15 @@
 from typing import Sequence
-from chromadb import QueryResult
 
+from chromadb import QueryResult
 from connections import ChromaConnectionManager
 from models import QueryHit, VectorEntry
 from pydantic import BaseModel, ValidationError
 
-class VectorRepository: #TODO: implement caching
+
+class VectorRepository:  # TODO: implement caching
     """
     Encapsulates ChromaDB access functionality
-    
+
     The ChromaDB vector database has the following schema:
 
     VectorEntry {
@@ -35,17 +36,15 @@ class VectorRepository: #TODO: implement caching
 
     # Constants
     EXPECTED_DIM = 512
-    SOURCE_DOMAIN_KEY = 'source_domain'
-    INDEXED_AT_KEY = 'indexed_at'
-    IDS_KEY = 'ids'
-    METADATAS_KEY = 'metadatas'
-    DISTANCES_KEY = 'distances'
+    SOURCE_DOMAIN_KEY = "source_domain"
+    INDEXED_AT_KEY = "indexed_at"
+    IDS_KEY = "ids"
+    METADATAS_KEY = "metadatas"
+    DISTANCES_KEY = "distances"
     QUERY_INCLUDE = [METADATAS_KEY, DISTANCES_KEY]
-
 
     def __init__(self, conn: ChromaConnectionManager):
         self._collection = conn.collection
-
 
     def upsert(self, entry: VectorEntry) -> str:
         """
@@ -57,10 +56,11 @@ class VectorRepository: #TODO: implement caching
         Returns:
             str: The id of the add entry or empty string on failure.
         """
-        self._collection.upsert(ids=entry.id, embeddings=entry.embedding, metadatas=entry.metadata)
+        self._collection.upsert(
+            ids=entry.id, embeddings=entry.embedding, metadatas=entry.metadata
+        )
         fetched_id = self._get_entries([entry.id])[0]
-        return fetched_id if fetched_id else ''
-
+        return fetched_id if fetched_id else ""
 
     def batch_upsert(self, entries: Sequence[VectorEntry]) -> list[str]:
         """
@@ -76,7 +76,6 @@ class VectorRepository: #TODO: implement caching
         self._collection.upsert(ids=ids, embeddings=embeddings, metadatas=metadatas)
         return self._get_entries(ids)
 
-
     def query_similar(
         self, embedding: Sequence[float], limit: int
     ) -> tuple[list[QueryHit], list[ValidationError]]:
@@ -91,15 +90,14 @@ class VectorRepository: #TODO: implement caching
             ExceptionGroup | None: The exceptions raised if any exist else None.
         """
         results = self._collection.query(
-            query_embeddings=embedding,
-            n_results=limit,
-            include=self.QUERY_INCLUDE
+            query_embeddings=embedding, n_results=limit, include=self.QUERY_INCLUDE
         )
 
         return self._parse_results_object(results)[0]
 
-
-    def batch_query_similar(self, embeddings: list[Sequence[float]], limit: int) -> list[tuple[list[QueryHit], list[ValidationError]]]:
+    def batch_query_similar(
+        self, embeddings: list[Sequence[float]], limit: int
+    ) -> list[tuple[list[QueryHit], list[ValidationError]]]:
         """
         Batch queries the top limit many similar embeddings in the database for every id and returns a list of QueryHit lists and ValidationError lists,
         one for each id in the order they were input.
@@ -112,13 +110,10 @@ class VectorRepository: #TODO: implement caching
                 The list is ordered the same way the embeddings input is ordered.
         """
         results = self._collection.query(
-            query_embeddings=embeddings,
-            n_results=limit,
-            include=self.QUERY_INCLUDE
+            query_embeddings=embeddings, n_results=limit, include=self.QUERY_INCLUDE
         )
 
         results = self._parse_results_object(results)
-
 
     def _get_entries(self, ids: list[str]) -> list[str]:
         """
@@ -136,11 +131,12 @@ class VectorRepository: #TODO: implement caching
         for idx, id in enumerate(ids):
             if id in fetched_ids:
                 res[idx] = id
-        
+
         return res
 
-
-    def _parse_results_object(self, results: QueryResult) -> list[tuple[list[QueryHit], list[ValidationError]]]:
+    def _parse_results_object(
+        self, results: QueryResult
+    ) -> list[tuple[list[QueryHit], list[ValidationError]]]:
         """
         Parses *.query result objects (TypedDict objects) and returns list of results as QueryHit models and errors raised by
         parsing. This function performs result validation with `self._validate_query_results`.
@@ -160,17 +156,24 @@ class VectorRepository: #TODO: implement caching
             query_hits: list[QueryHit] = [None] * num_results
             errors: list[ValidationError] = [None] * num_results
 
-            for idx, id, metadata, similarity in enumerate(zip(results[self.IDS_KEY][i], results[self.METADATAS_KEY][i], results[self.DISTANCES_KEY][i])):
+            for idx, id, metadata, similarity in enumerate(
+                zip(
+                    results[self.IDS_KEY][i],
+                    results[self.METADATAS_KEY][i],
+                    results[self.DISTANCES_KEY][i],
+                )
+            ):
                 try:
                     # FIXME: replace hardcoding with metadata
-                    hit = QueryHit(id=id, metadata={'str': 'test'}, similarity=similarity)
+                    hit = QueryHit(
+                        id=id, metadata={"str": "test"}, similarity=similarity
+                    )
                     query_hits[idx] = hit
                 except ValidationError as e:
                     errors[idx] = e
-            
+
             result_pairs.append((query_hits, errors))
         return result_pairs
-
 
     def _split_entries(
         self, entries: Sequence[VectorEntry]
@@ -197,7 +200,6 @@ class VectorRepository: #TODO: implement caching
             metadatas.append(entry.metadata)
         return ids, embeddings, metadatas
 
-
     # TODO: Move this logic into field validation pydantic function
     def _validate_entry(self, entry: VectorEntry) -> None:
         """
@@ -210,21 +212,28 @@ class VectorRepository: #TODO: implement caching
             ValueError: Any invalid fields in the entry.
         """
         if not entry:
-            raise ValueError('Empty entry')
+            raise ValueError("Empty entry")
         if not entry.id:
-            raise ValueError(f'Entry is missing id: {entry}')
+            raise ValueError(f"Entry is missing id: {entry}")
         if not entry.embedding:
-            raise ValueError(f'Entry is missing embedding: {entry}')
+            raise ValueError(f"Entry is missing embedding: {entry}")
         if len(entry.embedding) != self.EXPECTED_DIM:
-            raise ValueError(f'Entry embedding dimesions incorrect: {len(entry)} != {self.EXPECTED_DIM}')
+            raise ValueError(
+                f"Entry embedding dimesions incorrect: {len(entry)} != {self.EXPECTED_DIM}"
+            )
         if not entry.metadata:
-            raise ValueError(f'Entry metadata missing: {entry}')
-        if not entry.metadata.get(self.SOURCE_DOMAIN_KEY, None) or not entry.metadata.get(self.INDEXED_AT_KEY, None):
-            raise ValueError(f'Entry metadata missing one or more fields: {entry.metadata}')
-
+            raise ValueError(f"Entry metadata missing: {entry}")
+        if not entry.metadata.get(
+            self.SOURCE_DOMAIN_KEY, None
+        ) or not entry.metadata.get(self.INDEXED_AT_KEY, None):
+            raise ValueError(
+                f"Entry metadata missing one or more fields: {entry.metadata}"
+            )
 
     # TODO: Move this logic into field validation pydantic function
-    def _get_valid_entries(self, entries: Sequence[VectorEntry]) -> tuple[list[VectorEntry], list[ValueError]]:
+    def _get_valid_entries(
+        self, entries: Sequence[VectorEntry]
+    ) -> tuple[list[VectorEntry], list[ValueError]]:
         """
         Returns a list of all entries that do not raise errors when called with `self._valid_entry`.
 
@@ -243,7 +252,6 @@ class VectorRepository: #TODO: implement caching
             except ValueError as e:
                 errors.append(e)
         return valid_entries, errors
-    
 
     # TODO: Move this logic into field validation pydantic function
     def _validate_query_params(self, embedding: Sequence[float]) -> None:
@@ -256,12 +264,15 @@ class VectorRepository: #TODO: implement caching
             ValueError: Any invalid fields in the entry.
         """
         if not embedding:
-            raise ValueError('Empty embedding')
+            raise ValueError("Empty embedding")
         if len(embedding) != self.EXPECTED_DIM:
-            raise ValueError(f'Embedding dimesions incorrect: {len(embedding)} != {self.EXPECTED_DIM}')
+            raise ValueError(
+                f"Embedding dimesions incorrect: {len(embedding)} != {self.EXPECTED_DIM}"
+            )
 
-    
-    def _get_valid_queries(self, embeddings: list[Sequence[float]]) -> tuple[list[Sequence[float]], list[ValueError]]:
+    def _get_valid_queries(
+        self, embeddings: list[Sequence[float]]
+    ) -> tuple[list[Sequence[float]], list[ValueError]]:
         """
         Returns a list of all queries that do not raise errors when called with `self._validate_query_params`.
 
@@ -279,7 +290,6 @@ class VectorRepository: #TODO: implement caching
             except ValueError as e:
                 errors.append(e)
         return valid_queries, errors
-    
 
     # TODO: Move to controller layer
     def _validate_query_results(self, results: QueryResult, limit: int) -> None:
@@ -294,6 +304,8 @@ class VectorRepository: #TODO: implement caching
         """
         for field in self.QUERY_INCLUDE:
             if field not in results:
-                raise ValueError(f'Result missing field: {field}')
+                raise ValueError(f"Result missing field: {field}")
             if len(results[field]) > limit:
-                raise ValueError(f'Too many values returned: {len(results[field])} > {limit} (max)')
+                raise ValueError(
+                    f"Too many values returned: {len(results[field])} > {limit} (max)"
+                )

@@ -5,7 +5,7 @@ from functools import partial
 
 from fastapi import HTTPException, UploadFile
 from ml import CLIPModelService
-from models import SearchResponse, SimilarImage, QueryHit
+from models import QueryHit, SearchResponse, SimilarImage
 from PIL import Image
 from repository import ImageRepository, VectorRepository
 
@@ -125,7 +125,9 @@ class SearchController:
                 status_code=500, detail="Failed to extract image features"
             )
 
-    def _search_similar_vectors(self, embedding: list[float], limit: int) -> list[SimilarImage]:
+    def _search_similar_vectors(
+        self, embedding: list[float], limit: int
+    ) -> list[SimilarImage]:
         """
         Search for similar vectors in ChromaDB. Uses cosine similarity to find matches.
 
@@ -136,7 +138,6 @@ class SearchController:
             list[dict]: List of image uuids and corresponding vector embeddings.
         """
         results = self.vector_repository.query_similar(embedding, limit)
-
 
     def _fetch_image_metadata(self, similar_vectors: list[dict]) -> list[SimilarImage]:
         """
