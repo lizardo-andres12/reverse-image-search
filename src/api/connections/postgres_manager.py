@@ -18,10 +18,10 @@ class PostgresConnectionManager:
     async def healthcheck(self) -> dict:
         try:
             async with self.client.acquire() as conn:
-                await conn.fetchval('select 1')
-            return {'Postgres': 'Healthy!'}
+                await conn.fetchval("select 1")
+            return {"Postgres": "Healthy!"}
         except asyncpg.exceptions.PostgresError as e:
-            return {'Postgres': f'Error: {e}'}
+            return {"Postgres": f"Error: {e}"}
 
     async def close_connection(self):
         await self.client.close()

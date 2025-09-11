@@ -20,7 +20,7 @@ class ChromaConnectionManager:
 
     def initialize_connection(self) -> None:
         """
-        Creates an HTTP connection to the ChromaDB docker container running from docker-compose and retrieves the 
+        Creates an HTTP connection to the ChromaDB docker container running from docker-compose and retrieves the
         corresponding image embedding collection or creates it.
         """
         self.client = chromadb.HttpClient(
@@ -34,6 +34,6 @@ class ChromaConnectionManager:
     def healthcheck(self) -> dict:
         try:
             is_alive = self.client.heartbeat()
-            return {'ChromaDB': 'Healthy!'}
+            return {"ChromaDB": "Healthy!"}
         except Exception as e:
-            return {'ChromaDB': f'Error: {e}'}
+            return {"ChromaDB": f"Error: {e}"}
