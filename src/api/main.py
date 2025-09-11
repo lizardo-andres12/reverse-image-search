@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from config import DatabaseConfig
 from connections import (ChromaConnectionManager, PostgresConnectionManager,
                          RedisConnectionManager)
-from dependencies import get_clip_service, get_postgres_manager, get_chroma_manager
+from dependencies import (get_chroma_manager, get_clip_service,
+                          get_postgres_manager)
 from fastapi import Depends, FastAPI
 from handler import search_router
 from repository import VectorRepository
@@ -48,7 +49,10 @@ app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/healthcheck")
-async def healthcheck(pg: PostgresConnectionManager = Depends(get_postgres_manager), chromadb: ChromaConnectionManager = Depends(get_chroma_manager)):
+async def healthcheck(
+    pg: PostgresConnectionManager = Depends(get_postgres_manager),
+    chromadb: ChromaConnectionManager = Depends(get_chroma_manager),
+):
     pg_health = await pg.healthcheck()
     chroma_db_health = chromadb.healthcheck()
 
@@ -59,7 +63,7 @@ async def healthcheck(pg: PostgresConnectionManager = Depends(get_postgres_manag
 async def test(chromadb: ChromaConnectionManager = Depends(get_chroma_manager)):
     vr = VectorRepository(chromadb)
     results = vr.query_similar([1.2, 3.1, 4.2], 5)
-    return {'message': 'success', 'results': results[0], 'errors': results[1]}
+    return {"message": "success", "results": results[0], "errors": results[1]}
 
 
 app.include_router(search_router, prefix="/api")
