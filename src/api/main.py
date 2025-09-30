@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
+from models import ImageMetadataModel, ImageTagModel
 from config import DatabaseConfig
 from connections import (ChromaConnectionManager, PostgresConnectionManager,
                          RedisConnectionManager)
@@ -8,7 +9,8 @@ from dependencies import (get_chroma_manager, get_clip_service,
                           get_postgres_manager)
 from fastapi import Depends, FastAPI
 from handler import search_router
-from repository import VectorRepository
+from repository import VectorRepository, ImageRepository
+import uuid
 
 
 @asynccontextmanager
@@ -62,8 +64,8 @@ async def healthcheck(
 @app.get("/test")
 async def test(chromadb: ChromaConnectionManager = Depends(get_chroma_manager)):
     vr = VectorRepository(chromadb)
-    results = vr.query_similar([1.2, 3.1, 4.2], 5)
-    return {"message": "success", "results": results[0], "errors": results[1]}
+    results = await vr.get_image_metadata('a8897316-6441-4877-8436-7739f77cbaa9')
+    return {'message': 'success', 'results': results}
 
 
 app.include_router(search_router, prefix="/api")

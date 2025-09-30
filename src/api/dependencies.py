@@ -32,7 +32,6 @@ def get_clip_service() -> CLIPModelService:
 @lru_cache
 def get_vector_repo(
     chromadb_manager: ChromaConnectionManager = Depends(get_chroma_manager),
-    redis_manager: RedisConnectionManager = Depends(get_redis_manager),
 ) -> VectorRepository:
     return VectorRepository(chromadb_manager)
 
@@ -40,9 +39,8 @@ def get_vector_repo(
 @lru_cache
 def get_image_repo(
     postgres_manager: PostgresConnectionManager = Depends(get_postgres_manager),
-    redis_manager: RedisConnectionManager = Depends(get_redis_manager),
 ) -> ImageRepository:
-    return ImageRepository()
+    return ImageRepository(postgres_manager)
 
 
 @lru_cache

@@ -1,1 +1,1 @@
-from .image_mapper import image_metdata_db_to_model
+from .image_mapper import image_metadata_db_to_model

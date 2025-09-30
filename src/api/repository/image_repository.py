@@ -1,5 +1,5 @@
 from connections import PostgresConnectionManager
-from mapper import image_metdata_db_to_model
+from mapper import image_metadata_db_to_model
 from models import ImageMetadataModel, ImageTagModel
 
 
@@ -29,7 +29,7 @@ class ImageRepository: # TODO: implement caching
     idx_image_tags_uuid on image_tags.uuid
     idx_image_tags_tag on image_tags.tag
 
-    In the image_tags table, the only field of interest to the program is the `tag`,
+    In the image_tags table, the only field of interest to the program is the tag,
     the rest are for relationship and enabling ordered retrieval
 
     Note the one-to-many relationship shared between images and their tags. Entries
@@ -48,10 +48,10 @@ class ImageRepository: # TODO: implement caching
 
     """Class-related constants"""
     INSERT_STMT = (
-        "insert into `images` (uuid, filename, source_url, source_domain, "
+        "insert into images (uuid, filename, source_url, source_domain, "
         "file_size, dimensions) values ($1,$2,$3,$4,$5,$6)"
     )
-    TAG_INSERT_STMT = "insert into `image_tags` (id, image_uuid, tag, confidence) values ($1,$2,$3,$4)"
+    TAG_INSERT_STMT = "insert into image_tags (image_uuid, tag, confidence) values ($1,$2,$3)"
     GET_JOIN_STMT = (
         "SELECT i.uuid, i.filename, i.source_url, i.source_domain, i.file_size, i.dimensions, "
         "STRING_AGG(it.tag, ',' ORDER BY it.confidence DESC) as tags FROM images i inner JOIN "
@@ -75,8 +75,8 @@ class ImageRepository: # TODO: implement caching
                     self.INSERT_STMT,
                     model.id,
                     model.filename,
-                    model.source_url,
-                    model.source_domain,
+                    str(model.source_url),
+                    str(model.source_domain),
                     model.file_size,
                     model.dimensions,
                 )
@@ -92,7 +92,7 @@ class ImageRepository: # TODO: implement caching
             models (list[ImageMetadataModel]): The list of models to be inserted
         """
         models_list = [model.to_tuple() for model in models]
-        tags_list = [[tag.to_tuple() for tag in model.tag] for model in models]
+        tags_list = [[tag.to_tuple() for tag in model.tags] for model in models]
         async with self.conn.acquire() as conn:
             async with conn.transaction():
                 await conn.executemany(self.INSERT_STMT, models_list)
@@ -101,5 +101,6 @@ class ImageRepository: # TODO: implement caching
 
     async def get_image_metadata(self, id: str) -> ImageMetadataModel | None:
         async with self.conn.acquire() as conn:
-            record = await conn.fetch(self.GET_JOIN_STMT, id)
-            return image_metdata_db_to_model(record)
+            record = await conn.fetchrow(self.GET_JOIN_STMT, id)
+            return image_metadata_db_to_model(record)
+

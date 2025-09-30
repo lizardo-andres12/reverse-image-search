@@ -9,8 +9,11 @@ class ImageTagModel(BaseModel):
     tag: str
     confidence: float
 
-    def to_tuple(self) -> tuple[int, str, str, float]:
-        return self.id, self.image_uuid, self.tag, self.confidence
+    def to_tuple(self) -> tuple[str, str, float]:
+        return self.image_uuid, self.tag, self.confidence
+    
+    def __str__(self):
+        return self.tag
 
 
 class ImageMetadataModel(BaseModel):
@@ -22,7 +25,7 @@ class ImageMetadataModel(BaseModel):
     source_domain: HttpUrl
     file_size: int
     dimensions: str
-    tags: list[str]
+    tags: list[ImageTagModel]
 
-    def to_tuple(self) -> tuple[str, str, HttpUrl, HttpUrl, int, str]:
-        return self.id, self.filename, self.source_url, self.source_domain, self.file_size, self.dimensions
+    def to_tuple(self) -> tuple[str, str, str, str, int, str]:
+        return self.id, self.filename, str(self.source_url), str(self.source_domain), self.file_size, self.dimensions

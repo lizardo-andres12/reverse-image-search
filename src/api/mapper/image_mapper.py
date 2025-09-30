@@ -1,8 +1,9 @@
 from asyncpg import Record
-from models import ImageMetadataModel
+from pydantic import HttpUrl
+from models import ImageMetadataModel, ImageTagModel
 
 
-def image_metdata_db_to_model(metadata: Record) -> ImageMetadataModel:
+def image_metadata_db_to_model(metadata: Record) -> ImageMetadataModel:
     """Takes raw database-retrieved objects and converts it into an
     ImageMetadataModel object.
     
@@ -11,16 +12,17 @@ def image_metdata_db_to_model(metadata: Record) -> ImageMetadataModel:
     Returns:
         ImageMetadataModel: The data collection object.
     """
-    tags = metadata.get('tags', None)
-    tags = tags.split(',') if tags else None
+    tags = metadata.get('tags', None) # TODO: retrieve all image_tags rows from db
+    tags = tags.split(',') if tags else list()
+    tags = [ImageTagModel(id=0, image_uuid='', tag=tag, confidence=0) for tag in tags]
 
     model = ImageMetadataModel(
-        id=metadata.get('uuid', None),
-        filename=metadata.get('filename', None),
-        source_url=metadata.get('source_url', None),
-        source_domain=metadata.get('source_domain', None),
-        file_size=metadata.get('file_size', None),
-        dimensions=metadata.get('dimensions', None),
+        id=str(metadata.get('uuid', '')),
+        filename=metadata.get('filename', ''),
+        source_url=HttpUrl(metadata.get('source_url', '')),
+        source_domain=HttpUrl(metadata.get('source_domain', '')),
+        file_size=metadata.get('file_size', 0),
+        dimensions=metadata.get('dimensions', ''),
         tags=tags
     )
     return model
