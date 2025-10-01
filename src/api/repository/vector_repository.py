@@ -78,7 +78,7 @@ class VectorRepository:  # TODO: implement caching
 
     def query_similar(
         self, embedding: Sequence[float], limit: int
-    ) -> tuple[list[QueryHit], list[ValidationError]]:
+    ) -> list[QueryHit]:
         """
         Finds the top limit many similar embeddings in the database and returns a list of the matches as QueryHit pydantic model objects.
 
@@ -87,7 +87,6 @@ class VectorRepository:  # TODO: implement caching
             limit (int): The maximum number of results to return.
         Returns:
             list[QueryHit]: The top limit many similar vector's metadata.
-            ExceptionGroup | None: The exceptions raised if any exist else None.
         """
         results = self._collection.query(
             query_embeddings=embedding, n_results=limit, include=self.QUERY_INCLUDE
@@ -97,7 +96,7 @@ class VectorRepository:  # TODO: implement caching
 
     def batch_query_similar(
         self, embeddings: list[Sequence[float]], limit: int
-    ) -> list[tuple[list[QueryHit], list[ValidationError]]]:
+    ) -> list[list[QueryHit]]:
         """
         Batch queries the top limit many similar embeddings in the database for every id and returns a list of QueryHit lists and ValidationError lists,
         one for each id in the order they were input.
@@ -106,14 +105,13 @@ class VectorRepository:  # TODO: implement caching
             embeddings (list[Sequence[float]]): The embeddings to batch query the database with.
             limit (int): The maximum number of QueryHits per query.
         Returns:
-            list[list[QueryHit], list[Validation]]: A list of list[QueryHit], list[ValidationError] pairs, which represent the output of one query.
-                The list is ordered the same way the embeddings input is ordered.
+            list[list[QueryHit]]: The collection of parsed results.
         """
         results = self._collection.query(
             query_embeddings=embeddings, n_results=limit, include=self.QUERY_INCLUDE
         )
 
-        results = self._parse_results_object(results)
+        return self._parse_results_object(results)
 
     def _get_entries(self, ids: list[str]) -> list[str]:
         """
@@ -125,7 +123,7 @@ class VectorRepository:  # TODO: implement caching
             list[str]: An equally sized list of ids or None in the case that an entry with
                 id does not exist in the database. The list is returned in the same order it was given.
         """
-        fetched_ids = set(self._collection.get(ids=ids))
+        fetched_ids = set(self._collection.get(ids=ids)[self.IDS_KEY])
 
         res = [None] * len(ids)
         for idx, id in enumerate(ids):
@@ -136,7 +134,7 @@ class VectorRepository:  # TODO: implement caching
 
     def _parse_results_object(
         self, results: QueryResult
-    ) -> list[tuple[list[QueryHit], list[ValidationError]]]:
+    ) -> list[list[QueryHit]]:
         """
         Parses *.query result objects (TypedDict objects) and returns list of results as QueryHit models and errors raised by
         parsing. This function performs result validation with `self._validate_query_results`.
@@ -144,35 +142,32 @@ class VectorRepository:  # TODO: implement caching
         Args:
             results (QueryResult): The result object returned by *.query calls.
         Returns:
-            list[tuple[list[QueryHit], list[ValidationError]]]: The list of result pairs.
-            list[QueryHit]: The parsed results in the order they were returned.
-            list[ValidationError]: The parsing errors in the order they were returned.
+            list[list[QueryHit]]: The collection of parsed results.
         """
         num_queries = len(results[self.IDS_KEY])
-        result_pairs: list[tuple[list[QueryHit], list[ValidationError]]] = []
+        result_pairs: list[list[QueryHit]] = []
 
         for i in range(num_queries):
             num_results = len(results[self.IDS_KEY][i])
             query_hits: list[QueryHit] = [None] * num_results
-            errors: list[ValidationError] = [None] * num_results
 
-            for idx, id, metadata, similarity in enumerate(
+            for idx, val in enumerate(
                 zip(
                     results[self.IDS_KEY][i],
                     results[self.METADATAS_KEY][i],
                     results[self.DISTANCES_KEY][i],
                 )
             ):
-                try:
-                    # FIXME: replace hardcoding with metadata
-                    hit = QueryHit(
-                        id=id, metadata={"str": "test"}, similarity=similarity
-                    )
-                    query_hits[idx] = hit
-                except ValidationError as e:
-                    errors[idx] = e
+                id, metadata, similarity = val
+                if not metadata:
+                    metadata = {}
 
-            result_pairs.append((query_hits, errors))
+                hit = QueryHit(
+                    id=id, metadata=dict(metadata), similarity=similarity
+                )
+                query_hits[idx] = hit
+
+            result_pairs.append(query_hits)
         return result_pairs
 
     def _split_entries(
@@ -195,7 +190,7 @@ class VectorRepository:  # TODO: implement caching
         metadatas: list[dict[str, str]] = []
 
         for entry in entries:
-            ids.append(entry.uuid)
+            ids.append(entry.id)
             embeddings.append(entry.embedding)
             metadatas.append(entry.metadata)
         return ids, embeddings, metadatas

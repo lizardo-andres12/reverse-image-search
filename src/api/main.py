@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from models import ImageMetadataModel, ImageTagModel
+from models import ImageMetadataModel, ImageTagModel, VectorEntry
 from config import DatabaseConfig
 from connections import (ChromaConnectionManager, PostgresConnectionManager,
                          RedisConnectionManager)
@@ -64,8 +64,14 @@ async def healthcheck(
 @app.get("/test")
 async def test(chromadb: ChromaConnectionManager = Depends(get_chroma_manager)):
     vr = VectorRepository(chromadb)
-    results = await vr.get_image_metadata('a8897316-6441-4877-8436-7739f77cbaa9')
-    return {'message': 'success', 'results': results}
+    models = []
+    import random
+    for i in range(5):
+        test_id = str(uuid.uuid4())
+        model = VectorEntry(id=test_id, embedding=[random.random(), random.random(), random.random()], metadata={'source_domain': 'amazonaws.site.com', 'indexed_at': 'some_date'})
+        models.append([random.random(), random.random(), random.random()])
+    entries = vr._get_entries(['4de73147-ee4d-49f8-81fe-308c5312550c', '48c7c402-040a-49c5-a56d-eb2899dc199a', '8'])
+    return {'message': 'success', 'entries': entries}
 
 
 app.include_router(search_router, prefix="/api")

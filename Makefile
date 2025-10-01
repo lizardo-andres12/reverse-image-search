@@ -4,7 +4,7 @@ all:
 	@echo "unimplemented"
 
 run: src/api/main.py
-	@uvicorn main:app --reload --app-dir src/api
+	@uvicorn main:app --reload --reload-dir ./src --app-dir src/api
 
 dc-up: docker/.env docker/docker-compose.yml
 	@docker-compose --env-file docker/.env -f docker/docker-compose.yml up -d

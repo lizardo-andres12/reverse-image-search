@@ -5,12 +5,13 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ./data/chroma:/chroma/chroma
+      - ./data/chroma:/data
     environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=False
       - CHROMA_SERVER_AUTH_PROVIDER=chromadb.auth.token.TokenAuthServerProvider
       - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_SERVER_AUTH_TOKEN}
       - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=CHROMA_TOKEN
-      - ANONYMIZED_TELEMETRY=False
     networks:
       - ris-network
     healthcheck:
@@ -49,8 +50,6 @@ services:
     container_name: ris-redis
     ports:
       - "6379:6379"
-    volumes:
-      - ./data/redis:/data
     command: >
       redis-server
       --maxmemory 512mb
