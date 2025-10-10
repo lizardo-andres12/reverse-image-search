@@ -1,15 +1,15 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from models import ImageMetadataModel, ImageTagModel, VectorEntry
-from config import DatabaseConfig, CLIPConfig
-from managers import (ChromaConnectionManager, PostgresConnectionManager,
-                         RedisConnectionManager, CLIPManager)
+from config import CLIPConfig, DatabaseConfig
 from dependencies import (get_chroma_manager, get_clip_service,
                           get_postgres_manager)
 from fastapi import Depends, FastAPI
 from handler import search_router
+from managers import (ChromaConnectionManager, CLIPManager,
+                      PostgresConnectionManager, RedisConnectionManager)
 from ml import CLIPModelService
+from models import ImageMetadataModel, ImageTagModel, VectorEntry
 from PIL import Image
 
 
@@ -29,7 +29,9 @@ async def lifespan(app: FastAPI):
 
     # Init db conns
     # TODO: Standardize startup manager
-    await asyncio.get_event_loop().run_in_executor(None, embedding_model_manager.initialize)
+    await asyncio.get_event_loop().run_in_executor(
+        None, embedding_model_manager.initialize
+    )
     await pg_manager.initialize_connection()
     chromadb_manager.initialize_connection()
     redis_manager.initialize_connection()

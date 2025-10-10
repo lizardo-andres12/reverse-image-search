@@ -3,7 +3,7 @@ from mapper import image_metadata_db_to_model
 from models import ImageMetadataModel, ImageTagModel
 
 
-class ImageRepository: # TODO: implement caching
+class ImageRepository:  # TODO: implement caching
     """
     Encapsulates PostgreSQL data access logic
 
@@ -51,7 +51,9 @@ class ImageRepository: # TODO: implement caching
         "insert into images (uuid, filename, source_url, source_domain, "
         "file_size, dimensions) values ($1,$2,$3,$4,$5,$6)"
     )
-    TAG_INSERT_STMT = "insert into image_tags (image_uuid, tag, confidence) values ($1,$2,$3)"
+    TAG_INSERT_STMT = (
+        "insert into image_tags (image_uuid, tag, confidence) values ($1,$2,$3)"
+    )
     GET_JOIN_STMT = (
         "SELECT i.uuid, i.filename, i.source_url, i.source_domain, i.file_size, i.dimensions, "
         "STRING_AGG(it.tag, ',' ORDER BY it.confidence DESC) as tags FROM images i inner JOIN "
@@ -81,13 +83,15 @@ class ImageRepository: # TODO: implement caching
                     model.dimensions,
                 )
 
-                await conn.executemany(self.TAG_INSERT_STMT, [tag.to_tuple() for tag in model.tags])
-    
+                await conn.executemany(
+                    self.TAG_INSERT_STMT, [tag.to_tuple() for tag in model.tags]
+                )
+
     async def batch_insert(self, models: list[ImageMetadataModel]):
         """Batch inserts model fields for every model into PostgreSQL database. This
         method will rollback all models on one failure, and should be wrapped in try/except
         block.
-        
+
         Args:
             models (list[ImageMetadataModel]): The list of models to be inserted
         """

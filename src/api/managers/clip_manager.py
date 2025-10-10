@@ -10,7 +10,7 @@ class CLIPManager:
         self.model_name = config.MODEL_NAME
         self.supported_formats = config.SUPPORTED_FORMATS
         self.cache_dir = config.CACHE_DIR
-        
+
         device = config.DEVICE
         if device == "":
             if torch.cuda.is_available():

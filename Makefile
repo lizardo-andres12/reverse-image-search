@@ -15,9 +15,6 @@ dc-up-debug: docker/.env docker/docker-compose.yml
 dc-down: docker/docker-compose.yml
 	@docker-compose -f docker/docker-compose.yml down
 
-clean-mounts: data/
-	@sudo rm -rf data/*
-
 format:
 	@echo "[Makefile] formatting..."
 	@black src/

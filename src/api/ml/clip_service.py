@@ -2,8 +2,8 @@ import logging
 
 import numpy as np
 import torch
-from PIL import Image
 from managers import CLIPManager
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class CLIPModelService:
         self.model = manager.model
         self.processor = manager.processor
 
-    def extract_image_features(self, image: Image.Image) -> np.ndarray | None:
+    def extract_image_features(self, image: Image.Image) -> list[float, ...] | None:
         """Extract features from image using clip as either 512 or 768 dimension vector.
 
         Args:
@@ -40,7 +40,7 @@ class CLIPModelService:
 
         return normalized_features.cpu().numpy().flatten().tolist()
 
-    def extract_text_features(self, text: str) -> np.ndarray | None:
+    def extract_text_features(self, text: str) -> list[float, ...] | None:
         """Extract features from text using CLIP.
 
         Args:
@@ -49,7 +49,7 @@ class CLIPModelService:
             np.ndarray | None: Normalized text feature vector as numpy array or None if there is a failure.
         """
         if text == "":
-            return None 
+            return None
 
         inputs = self.processor(text=[text], return_tensors="pt").to(self.device)
         with torch.no_grad():
@@ -62,7 +62,7 @@ class CLIPModelService:
 
     def extract_batch_image_features(
         self, images: list[Image.Image], batch_size: int = 32
-    ) -> list[np.ndarray | None] | None:
+    ) -> list[list[float, ...] | None] | None:
         """Extract features from multiple images in batches for efficiency.
 
         Args:
@@ -77,7 +77,7 @@ class CLIPModelService:
 
         for i in range(0, len(images), batch_size):
             batch_num = (i // batch_size) + 1
-            batch = images[i:i + batch_size]
+            batch = images[i : i + batch_size]
             batch_results = [list()] * len(batch)
 
             try:
@@ -104,7 +104,9 @@ class CLIPModelService:
                         )
 
                     for j, orig_idx in enumerate(processed_idxs):
-                        batch_results[orig_idx] = normalized_features[j].cpu().numpy().flatten().tolist()
+                        batch_results[orig_idx] = (
+                            normalized_features[j].cpu().numpy().flatten().tolist()
+                        )
 
             except Exception as e:
                 logger.error(

@@ -1,9 +1,9 @@
 from functools import lru_cache
 
-from managers import (ChromaConnectionManager, PostgresConnectionManager,
-                         RedisConnectionManager, CLIPManager)
 from controller import SearchController
 from fastapi import Depends, Request
+from managers import (ChromaConnectionManager, CLIPManager,
+                      PostgresConnectionManager, RedisConnectionManager)
 from ml import CLIPModelService
 from repository import ImageRepository, VectorRepository
 

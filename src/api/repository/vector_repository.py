@@ -76,9 +76,7 @@ class VectorRepository:  # TODO: implement caching
         self._collection.upsert(ids=ids, embeddings=embeddings, metadatas=metadatas)
         return self._get_entries(ids)
 
-    def query_similar(
-        self, embedding: Sequence[float], limit: int
-    ) -> list[QueryHit]:
+    def query_similar(self, embedding: Sequence[float], limit: int) -> list[QueryHit]:
         """
         Finds the top limit many similar embeddings in the database and returns a list of the matches as QueryHit pydantic model objects.
 
@@ -132,9 +130,7 @@ class VectorRepository:  # TODO: implement caching
 
         return res
 
-    def _parse_results_object(
-        self, results: QueryResult
-    ) -> list[list[QueryHit]]:
+    def _parse_results_object(self, results: QueryResult) -> list[list[QueryHit]]:
         """
         Parses *.query result objects (TypedDict objects) and returns list of results as QueryHit models and errors raised by
         parsing. This function performs result validation with `self._validate_query_results`.
@@ -162,9 +158,7 @@ class VectorRepository:  # TODO: implement caching
                 if not metadata:
                     metadata = {}
 
-                hit = QueryHit(
-                    id=id, metadata=dict(metadata), similarity=similarity
-                )
+                hit = QueryHit(id=id, metadata=dict(metadata), similarity=similarity)
                 query_hits[idx] = hit
 
             result_pairs.append(query_hits)
