@@ -2,15 +2,15 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from models import ImageMetadataModel, ImageTagModel, VectorEntry
-from config import DatabaseConfig
-from connections import (ChromaConnectionManager, PostgresConnectionManager,
-                         RedisConnectionManager)
+from config import DatabaseConfig, CLIPConfig
+from managers import (ChromaConnectionManager, PostgresConnectionManager,
+                         RedisConnectionManager, CLIPManager)
 from dependencies import (get_chroma_manager, get_clip_service,
                           get_postgres_manager)
 from fastapi import Depends, FastAPI
 from handler import search_router
-from repository import VectorRepository, ImageRepository
-import uuid
+from ml import CLIPModelService
+from PIL import Image
 
 
 @asynccontextmanager
@@ -19,30 +19,30 @@ async def lifespan(app: FastAPI):
 
     # Load .env configs
     database_config = DatabaseConfig()
+    embedding_model_config = CLIPConfig()
 
-    # Create db conns
+    # Create managers
+    embedding_model_manager = CLIPManager(embedding_model_config)
+    pg_manager = PostgresConnectionManager(database_config)
     chromadb_manager = ChromaConnectionManager(database_config)
     redis_manager = RedisConnectionManager(database_config)
-    pg_manager = PostgresConnectionManager(database_config)
 
     # Init db conns
+    # TODO: Standardize startup manager
+    await asyncio.get_event_loop().run_in_executor(None, embedding_model_manager.initialize)
+    await pg_manager.initialize_connection()
     chromadb_manager.initialize_connection()
     redis_manager.initialize_connection()
-    await pg_manager.initialize_connection()
 
-    # Load model on startup
-    clip_service = get_clip_service()
-    await asyncio.get_event_loop().run_in_executor(None, clip_service.load_model)
-
+    app.state.embedding_model_manager = embedding_model_manager
+    app.state.pg_manager = pg_manager
     app.state.chromadb_manager = chromadb_manager
     app.state.redis_manager = redis_manager
-    app.state.pg_manager = pg_manager
 
     try:
         yield
-    # App teardown
     finally:
-        clip_service.unload_model()
+        embedding_model_manager.teardown()
         await redis_manager.close_connection()
         await pg_manager.close_connection()
 
@@ -62,16 +62,8 @@ async def healthcheck(
 
 
 @app.get("/test")
-async def test(chromadb: ChromaConnectionManager = Depends(get_chroma_manager)):
-    vr = VectorRepository(chromadb)
-    models = []
-    import random
-    for i in range(5):
-        test_id = str(uuid.uuid4())
-        model = VectorEntry(id=test_id, embedding=[random.random(), random.random(), random.random()], metadata={'source_domain': 'amazonaws.site.com', 'indexed_at': 'some_date'})
-        models.append([random.random(), random.random(), random.random()])
-    entries = vr._get_entries(['4de73147-ee4d-49f8-81fe-308c5312550c', '48c7c402-040a-49c5-a56d-eb2899dc199a', '8'])
-    return {'message': 'success', 'entries': entries}
+async def test(clip_service: CLIPModelService = Depends(get_clip_service)):
+    return {"message": "success"}
 
 
 app.include_router(search_router, prefix="/api")

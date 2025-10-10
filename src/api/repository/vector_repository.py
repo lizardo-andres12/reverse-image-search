@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from chromadb import QueryResult
-from connections import ChromaConnectionManager
+from managers import ChromaConnectionManager
 from models import QueryHit, VectorEntry
 from pydantic import BaseModel, ValidationError
 

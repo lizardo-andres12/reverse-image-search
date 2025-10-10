@@ -1,4 +1,4 @@
-from connections import PostgresConnectionManager
+from managers import PostgresConnectionManager
 from mapper import image_metadata_db_to_model
 from models import ImageMetadataModel, ImageTagModel
 
@@ -103,4 +103,3 @@ class ImageRepository: # TODO: implement caching
         async with self.conn.acquire() as conn:
             record = await conn.fetchrow(self.GET_JOIN_STMT, id)
             return image_metadata_db_to_model(record)
-

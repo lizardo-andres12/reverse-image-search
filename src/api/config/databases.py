@@ -1,9 +1,5 @@
-import os
 from urllib.parse import quote_plus
 
-import chromadb
-import redis
-from chromadb.config import Settings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
