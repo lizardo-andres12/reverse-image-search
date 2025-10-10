@@ -1,7 +1,7 @@
 from functools import lru_cache
 
-from connections import (ChromaConnectionManager, PostgresConnectionManager,
-                         RedisConnectionManager)
+from managers import (ChromaConnectionManager, PostgresConnectionManager,
+                         RedisConnectionManager, CLIPManager)
 from controller import SearchController
 from fastapi import Depends, Request
 from ml import CLIPModelService
@@ -24,9 +24,8 @@ def get_postgres_manager(request: Request):
 
 
 @lru_cache
-def get_clip_service() -> CLIPModelService:
-    # TODO: add config parsing
-    return CLIPModelService()
+def get_embedding_model_manager(request: Request):
+    return request.app.state.embedding_model_manager
 
 
 @lru_cache
@@ -41,6 +40,13 @@ def get_image_repo(
     postgres_manager: PostgresConnectionManager = Depends(get_postgres_manager),
 ) -> ImageRepository:
     return ImageRepository(postgres_manager)
+
+
+@lru_cache
+def get_clip_service(
+    embedding_model_manager: CLIPManager = Depends(get_embedding_model_manager),
+) -> CLIPModelService:
+    return CLIPModelService(embedding_model_manager)
 
 
 @lru_cache
