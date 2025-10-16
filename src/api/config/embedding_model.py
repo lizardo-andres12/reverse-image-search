@@ -11,7 +11,7 @@ class CLIPConfig(BaseSettings):
         extra="ignore",
     )
 
-    MODEL_NAME: str = "openai/clip-vit-base-patch32"
-    DEVICE: str = ""
-    CACHE_DIR: str = ""
+    MODEL_NAME: str
+    DEVICE: str
+    CACHE_DIR: str
     SUPPORTED_FORMATS: tuple[str, str, str] = "RGB", "RGBA", "L"
