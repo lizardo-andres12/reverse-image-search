@@ -1,9 +1,10 @@
 import asyncio
 from contextlib import asynccontextmanager
+from uuid import uuid4
 
 from config import CLIPConfig, DatabaseConfig
 from dependencies import (get_chroma_manager, get_clip_service,
-                          get_postgres_manager)
+                          get_postgres_manager, get_vector_repo)
 from fastapi import Depends, FastAPI
 from handler import search_router
 from managers import (ChromaConnectionManager, CLIPManager,
@@ -11,6 +12,7 @@ from managers import (ChromaConnectionManager, CLIPManager,
 from ml import CLIPModelService
 from models import ImageMetadataModel, ImageTagModel, VectorEntry
 from PIL import Image
+from repository import VectorRepository
 
 
 @asynccontextmanager
@@ -64,7 +66,17 @@ async def healthcheck(
 
 
 @app.get("/test")
-async def test(clip_service: CLIPModelService = Depends(get_clip_service)):
+async def test(
+    clip: CLIPModelService = Depends(get_clip_service),
+    chromadb: VectorRepository = Depends(get_vector_repo),
+):
+    try:
+        img = Image.open("imgs/orange.webp")
+        embedding = clip.extract_image_features(img)
+        similar = chromadb.query_similar(embedding, 2)
+        return {"query success": similar}
+    except Exception as e:
+        print(e)
     return {"message": "success"}
 
 

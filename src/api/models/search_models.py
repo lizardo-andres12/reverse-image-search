@@ -6,18 +6,9 @@ class SimilarImage(BaseModel):
 
     id: str
     similarity: float
-    thumbnail_url: HttpUrl | None = None
-    source_url: HttpUrl | None = None
-    source_domain: str | None = None
-    filename: str | None = None
-    file_size: int | None = None
-    dimensions: str | None = None
-    tags: list[str] = list()
-
-
-class SearchResponse(BaseModel):
-    """Response object for reverse-image search"""
-
-    keywords: list[str]
-    similar_images: list[SimilarImage]
-    total_found: int
+    source_url: HttpUrl
+    source_domain: HttpUrl
+    filename: str
+    file_size: int
+    dimensions: str
+    tags: list[str]

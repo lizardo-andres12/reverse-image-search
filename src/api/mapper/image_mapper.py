@@ -12,6 +12,9 @@ def image_metadata_db_to_model(metadata: Record) -> ImageMetadataModel:
     Returns:
         ImageMetadataModel: The data collection object.
     """
+    if metadata is None:
+        raise ValueError("cannot map None to model")
+
     tags = metadata.get("tags", None)  # TODO: retrieve all image_tags rows from db
     tags = tags.split(",") if tags else list()
     tags = [ImageTagModel(id=0, image_uuid="", tag=tag, confidence=0) for tag in tags]

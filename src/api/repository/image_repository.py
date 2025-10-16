@@ -1,3 +1,4 @@
+from asyncpg import NoDataFoundError
 from managers import PostgresConnectionManager
 from mapper import image_metadata_db_to_model
 from models import ImageMetadataModel, ImageTagModel
@@ -103,7 +104,26 @@ class ImageRepository:  # TODO: implement caching
                 for tags in tags_list:
                     await conn.executemany(self.TAG_INSERT_STMT, tags)
 
-    async def get_image_metadata(self, id: str) -> ImageMetadataModel | None:
+    async def get_image_metadata(self, id: str) -> ImageMetadataModel:
+        """Queries the Postgres database for metadata associated with the given id and all tags
+        associated with the id.
+
+        Args:
+            id (str): The uuid to check against in the database.
+        Returns:
+            ImageMetadataModel: The model containing returned data.
+        Throws:
+            NoDataFoundError: If `None` is returned from the query.
+        """
         async with self.conn.acquire() as conn:
             record = await conn.fetchrow(self.GET_JOIN_STMT, id)
+            if record is None:
+                raise NoDataFoundError(f"No data with id {id}")
             return image_metadata_db_to_model(record)
+
+    async def batch_get_image_metadata(
+        self, ids: list[str]
+    ) -> list[ImageMetadataModel]:
+        async with self.conn.acquire() as conn:
+            records = await conn.fetchmany(self.GET_JOIN_STMT, [[id] for id in ids])
+            return [image_metadata_db_to_model(record) for record in records]

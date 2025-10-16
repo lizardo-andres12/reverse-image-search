@@ -3,12 +3,10 @@ from typing import Sequence
 from chromadb import QueryResult
 from managers import ChromaConnectionManager
 from models import QueryHit, VectorEntry
-from pydantic import BaseModel, ValidationError
 
 
-class VectorRepository:  # TODO: implement caching
-    """
-    Encapsulates ChromaDB access functionality
+class VectorRepository:
+    """Encapsulates ChromaDB access functionality
 
     The ChromaDB vector database has the following schema:
 
@@ -47,8 +45,7 @@ class VectorRepository:  # TODO: implement caching
         self._collection = conn.collection
 
     def upsert(self, entry: VectorEntry) -> str:
-        """
-        Upserts a single VectorEntry to the database. This function MUST be wrapped in try/except block,
+        """Upserts a single VectorEntry to the database. This function MUST be wrapped in try/except block,
         catching only happens here for improved visiblity by adding the function where error was thrown.
 
         Args:
@@ -60,11 +57,10 @@ class VectorRepository:  # TODO: implement caching
             ids=entry.id, embeddings=entry.embedding, metadatas=entry.metadata
         )
         fetched_id = self._get_entries([entry.id])[0]
-        return fetched_id if fetched_id else ""
+        return fetched_id
 
     def batch_upsert(self, entries: Sequence[VectorEntry]) -> list[str]:
-        """
-        Upserts multiple VectorEntry models to the database. This function MUST be wrapped in try/except block,
+        """Upserts multiple VectorEntry models to the database. This function MUST be wrapped in try/except block,
         catching only happens here for improved visiblity by adding the function where error was thrown.
 
         Args:
@@ -77,8 +73,7 @@ class VectorRepository:  # TODO: implement caching
         return self._get_entries(ids)
 
     def query_similar(self, embedding: Sequence[float], limit: int) -> list[QueryHit]:
-        """
-        Finds the top limit many similar embeddings in the database and returns a list of the matches as QueryHit pydantic model objects.
+        """Finds the top limit many similar embeddings in the database and returns a list of the matches as QueryHit pydantic model objects.
 
         Args:
             embedding (Sequence[float]): The 512 dimenstion embedding vector to match.
@@ -95,8 +90,7 @@ class VectorRepository:  # TODO: implement caching
     def batch_query_similar(
         self, embeddings: list[Sequence[float]], limit: int
     ) -> list[list[QueryHit]]:
-        """
-        Batch queries the top limit many similar embeddings in the database for every id and returns a list of QueryHit lists and ValidationError lists,
+        """Batch queries the top limit many similar embeddings in the database for every id and returns a list of QueryHit lists and ValidationError lists,
         one for each id in the order they were input.
 
         Args:
@@ -112,18 +106,17 @@ class VectorRepository:  # TODO: implement caching
         return self._parse_results_object(results)
 
     def _get_entries(self, ids: list[str]) -> list[str]:
-        """
-        Gets all entries with id in ids.
+        """Gets all entries with id in ids.
 
         Args:
             ids (list[str]): The ids to get from database.
         Returns:
-            list[str]: An equally sized list of ids or None in the case that an entry with
+            list[str]: An equally sized list of ids or "" in the case that an entry with
                 id does not exist in the database. The list is returned in the same order it was given.
         """
         fetched_ids = set(self._collection.get(ids=ids)[self.IDS_KEY])
 
-        res = [None] * len(ids)
+        res = [""] * len(ids)
         for idx, id in enumerate(ids):
             if id in fetched_ids:
                 res[idx] = id
@@ -131,8 +124,7 @@ class VectorRepository:  # TODO: implement caching
         return res
 
     def _parse_results_object(self, results: QueryResult) -> list[list[QueryHit]]:
-        """
-        Parses *.query result objects (TypedDict objects) and returns list of results as QueryHit models and errors raised by
+        """Parses *.query result objects (TypedDict objects) and returns list of results as QueryHit models and errors raised by
         parsing. This function performs result validation with `self._validate_query_results`.
 
         Args:
@@ -167,8 +159,7 @@ class VectorRepository:  # TODO: implement caching
     def _split_entries(
         self, entries: Sequence[VectorEntry]
     ) -> tuple[list[str], list[Sequence[float]], list[dict[str, str]]]:
-        """
-        Splits all VectorEntry models into separate lists of uuids, embeddings, and metadatas. Since index ordering matters
+        """Splits all VectorEntry models into separate lists of uuids, embeddings, and metadatas. Since index ordering matters
         to upsert/add ChromaDB functions, this function MUST only be called with valid entries. Empty fields may cause order
         mismatch.
 

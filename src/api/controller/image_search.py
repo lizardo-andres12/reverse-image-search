@@ -1,16 +1,13 @@
-import asyncio
 import io
 import logging
-from functools import partial
 
 from fastapi import HTTPException, UploadFile
 from ml import CLIPModelService
-from models import QueryHit, SearchResponse, SimilarImage
+from models import SimilarImage
 from PIL import Image
 from repository import ImageRepository, VectorRepository
 
 logger = logging.getLogger(__name__)
-MAX_SIZE = 10 * 1024 * 1024
 
 
 class SearchController:
@@ -28,9 +25,8 @@ class SearchController:
         self.vector_repository = vector_repository
         self.image_repository = image_repository
 
-    async def search(self, file: UploadFile, limit: int) -> SearchResponse:
-        """
-        Performs file conversion to a vector and searches for similar images.
+    async def search(self, file: UploadFile, limit: int) -> list[SimilarImage]:
+        """Performs file conversion to a vector and searches for similar images.
 
         Args:
             file (UploadFile): The file from HTTP request.
@@ -39,29 +35,50 @@ class SearchController:
             SearchResponse: The top (limit) many keywords and images.
         """
         try:
-            loop = asyncio.get_event_loop()
-            self._validate_upload(file)
-
             image = await self._process_file_upload(file)
-            embedding = await loop.run_in_executor(
-                None, partial(self._extract_features, image)
+            embedding = self.clip_service.extract_image_features(image)
+            similar_embeddings = self.vector_repository.query_similar(embedding, limit)
+
+            similar_ids = [result.id for result in similar_embeddings]
+            similar_metadatas = await self.image_repository.batch_get_image_metadata(
+                similar_ids
             )
 
-            similar_vectors = self._search_similar_vectors(embedding, limit)
-            similar_images = self._fetch_image_metadata(similar_vectors)
-            keywords = self._generate_keywords(similar_images)
+            results = []
+            for image, metadata in zip(similar_embeddings, similar_metadatas):
+                results.append(
+                    SimilarImage(
+                        id=image.id,
+                        similarity=image.similarity,
+                        source_url=metadata.source_url,
+                        source_domain=metadata.source_domain,
+                        filename=metadata.filename,
+                        file_size=metadata.file_size,
+                        dimensions=metadata.dimensions,
+                        tags=[],
+                    )
+                )
 
-            return SearchResponse(
-                keywords=keywords,
-                similar_images=similar_images,
-                total_found=len(similar_images),
-            )
+            return results
 
         except Exception as e:
             logger.error(f"Search failed: {e}")
-            if isinstance(e, HTTPException):
-                raise e
-            raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+            raise e
+
+    async def _process_file_upload(self, file: UploadFile) -> Image.Image:
+        """Converts the uploaded file to PIL Image.
+
+        Args:
+            file (UploadFile): The file from HTTP Request.
+        Returns:
+            Image.Image: The object representing the image from the file.
+        """
+        try:
+            contents = await file.read()
+            image = Image.open(io.BytesIO(contents)).convert("RGB")
+            return image
+        finally:
+            await file.close()
 
     def _validate_upload(self, file: UploadFile):
         """
@@ -79,51 +96,6 @@ class SearchController:
 
         if not file.filename:
             raise HTTPException(status_code=400, detail="No filename provided")
-
-    async def _process_file_upload(self, file: UploadFile) -> Image.Image:
-        """
-        Converts the uploaded file to PIL Image.
-
-        Args:
-            file (UploadFile): The file from HTTP Request.
-        Returns:
-            Image.Image: The object representing the image from the file.
-        """
-
-        try:
-            contents = await file.read()
-            await file.close()
-            image = Image.open(io.BytesIO(contents)).convert("RGB")
-            return image
-        except Exception as e:
-            await file.close()
-            raise HTTPException(
-                status_code=400, detail="Invalid or corrupted image file"
-            )
-
-    def _extract_features(self, image: Image.Image) -> list:
-        """
-        Extract CLIP features from image.
-
-        Args:
-            image (Image.Image): The PIL image to process.
-        Returns:
-            list: The CLIP vector embeddings as python list from numpy array
-        """
-        try:
-            features = self.clip_service.extract_image_features(image)
-            if not features:
-                raise HTTPException(
-                    status_code=500, detail="Failed to extract image features"
-                )
-
-            logger.info(f"Extracted features with shape {features.shape}")
-            return features.tolist()
-        except Exception as e:
-            logger.error(f"Feature extraction failed: {e}")
-            raise HTTPException(
-                status_code=500, detail="Failed to extract image features"
-            )
 
     def _search_similar_vectors(
         self, embedding: list[float], limit: int

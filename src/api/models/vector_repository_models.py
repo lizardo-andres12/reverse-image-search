@@ -5,7 +5,7 @@ class VectorEntry(BaseModel):
     """Models one entry into the vector database"""
 
     id: str
-    embedding: list[float, ...]
+    embedding: list[float]
     metadata: dict[str, str]
 
 

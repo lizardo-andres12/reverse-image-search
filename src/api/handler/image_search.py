@@ -1,12 +1,12 @@
 from controller import SearchController
 from dependencies import get_search_controller
 from fastapi import APIRouter, Depends, File, UploadFile
-from models import SearchResponse
+from models import SimilarImage
 
 search_router = APIRouter(prefix="/search")
 
 
-@search_router.post("/search", response_model=SearchResponse)
+@search_router.post("/search", response_model=list[SimilarImage])
 async def search(
     file: UploadFile = File(...),
     search_controller: SearchController = Depends(get_search_controller),
