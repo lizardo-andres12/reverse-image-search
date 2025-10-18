@@ -1,16 +1,16 @@
 from controller import SearchController
 from dependencies import get_search_controller
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from models import SimilarImage
 
 search_router = APIRouter(prefix="/search")
 
 
-@search_router.post("/search", response_model=list[SimilarImage])
+@search_router.post("/image", response_model=list[SimilarImage])
 async def search(
-    file: UploadFile = File(...),
     search_controller: SearchController = Depends(get_search_controller),
-    limit: int = 20,
+    file: UploadFile = File(...),
+    limit: int = Form(20),
 ):
     """
     Search vector database for similar images and return response.
@@ -18,7 +18,7 @@ async def search(
     Args:
         file (UploadFile): The image file to consider.
     Returns:
-        SearchResponse: The SearchResponse model containing keywords related to image and
-        a list of images bounded by limit. If an error occurs, an HTTPException will be raised
+        list[SimilarImage]: The matched images with metadata sorted by confidence.
     """
-    return await search_controller.search(file, limit)
+    similar_images = await search_controller.search(file, limit)
+    return similar_images
