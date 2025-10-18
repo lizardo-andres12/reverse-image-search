@@ -46,12 +46,14 @@ class ImageRepository:  # TODO: implement caching
     def __init__(self, conn: PostgresConnectionManager):
         self.conn = conn.client
 
-    async def insert(self, model: ImageMetadataModel):
+    async def insert(self, model: ImageMetadataModel) -> str:
         """Inserts model fields into PostgreSQL database. This method should be wrapped
         in a try/except block.
 
         Args:
             model (ImageMetadataModel): The model object containing row data to be inserted.
+        Returns:
+            str: The id of the successfully inserted model.
         """
         async with self.conn.acquire() as conn:
             await conn.execute(
@@ -63,19 +65,23 @@ class ImageRepository:  # TODO: implement caching
                 model.file_size,
                 model.dimensions,
             )
+        return model.id
 
-    async def batch_insert(self, models: list[ImageMetadataModel]):
+    async def batch_insert(self, models: list[ImageMetadataModel]) -> list[str]:
         """Batch inserts model fields for every model into PostgreSQL database. This
         method will rollback all models on one failure, and should be wrapped in try/except
         block.
 
         Args:
             models (list[ImageMetadataModel]): The list of models to be inserted
+        Returns:
+            list[str]: The ids that were successfully inserted.
         """
         models_list = [model.to_tuple() for model in models]
         async with self.conn.acquire() as conn:
             async with conn.transaction():
                 await conn.executemany(self.INSERT_STMT, models_list)
+        return [model.id for model in models]
 
     async def get_image_metadata(self, id: str) -> ImageMetadataModel:
         """Queries the Postgres database for metadata associated with the given id and all tags
