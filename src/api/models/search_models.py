@@ -11,4 +11,3 @@ class SimilarImage(BaseModel):
     filename: str
     file_size: int
     dimensions: str
-    tags: list[str]
