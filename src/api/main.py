@@ -1,19 +1,24 @@
 import asyncio
+import io
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from config import CLIPConfig, DatabaseConfig
-from dependencies import (get_chroma_manager, get_clip_service,
-                          get_postgres_manager, get_vector_repo)
+from dependencies import (get_postgres_manager, get_image_repo,
+                          get_embedding_model_manager, get_chroma_manager,
+                          get_search_controller, get_clip_service,
+                          get_vector_repo)
 from fastapi import Depends, FastAPI
 from handler import search_router
 from managers import (ChromaConnectionManager, CLIPManager,
                       PostgresConnectionManager, RedisConnectionManager)
 from ml import CLIPModelService
-from models import ImageMetadataModel, ImageTagModel, VectorEntry
+from models import ImageMetadataModel, VectorEntry
 from PIL import Image
-from repository import VectorRepository
+from repository import ImageRepository, VectorRepository
 
+from fastapi import UploadFile
+from controller import SearchController
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,17 +72,16 @@ async def healthcheck(
 
 @app.get("/test")
 async def test(
-    clip: CLIPModelService = Depends(get_clip_service),
-    chromadb: VectorRepository = Depends(get_vector_repo),
+    search_controller: SearchController = Depends(get_search_controller),
+    embedding_service: CLIPModelService = Depends(get_clip_service),
+    vector_service: VectorRepository = Depends(get_vector_repo),
+    image_service: ImageRepository = Depends(get_image_repo),
 ):
-    try:
-        img = Image.open("imgs/orange.webp")
-        embedding = clip.extract_image_features(img)
-        similar = chromadb.query_similar(embedding, 2)
-        return {"query success": similar}
-    except Exception as e:
-        print(e)
-    return {"message": "success"}
+    with open('imgs/orange.webp', 'rb') as f:
+        contents = f.read()
+    img = UploadFile(io.BytesIO(contents))
+    similarImgs = await search_controller.search(img, 2)
+    return {"success": similarImgs}
 
 
 app.include_router(search_router, prefix="/api")
