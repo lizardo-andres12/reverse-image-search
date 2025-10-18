@@ -44,8 +44,8 @@ class VectorRepository:
     def __init__(self, conn: ChromaConnectionManager):
         self._collection = conn.collection
 
-    def upsert(self, entry: VectorEntry) -> str:
-        """Upserts a single VectorEntry to the database. This function MUST be wrapped in try/except block,
+    def insert(self, entry: VectorEntry) -> str:
+        """Inserts a single VectorEntry to the database. This function MUST be wrapped in try/except block,
         catching only happens here for improved visiblity by adding the function where error was thrown.
 
         Args:
@@ -59,8 +59,8 @@ class VectorRepository:
         fetched_id = self._get_entries([entry.id])[0]
         return fetched_id
 
-    def batch_upsert(self, entries: Sequence[VectorEntry]) -> list[str]:
-        """Upserts multiple VectorEntry models to the database. This function MUST be wrapped in try/except block,
+    def batch_insert(self, entries: Sequence[VectorEntry]) -> list[str]:
+        """Inserts multiple VectorEntry models to the database. This function MUST be wrapped in try/except block,
         catching only happens here for improved visiblity by adding the function where error was thrown.
 
         Args:
