@@ -1,21 +1,6 @@
 from pydantic import BaseModel, HttpUrl
 
 
-class ImageTagModel(BaseModel):
-    """Represents an image tag"""
-
-    id: int
-    image_uuid: str
-    tag: str
-    confidence: float
-
-    def to_tuple(self) -> tuple[str, str, float]:
-        return self.image_uuid, self.tag, self.confidence
-
-    def __str__(self):
-        return self.tag
-
-
 class ImageMetadataModel(BaseModel):
     """Represents a full entry of image metadata"""
 
@@ -25,7 +10,6 @@ class ImageMetadataModel(BaseModel):
     source_domain: HttpUrl
     file_size: int
     dimensions: str
-    tags: list[ImageTagModel]
 
     def to_tuple(self) -> tuple[str, str, str, str, int, str]:
         return (

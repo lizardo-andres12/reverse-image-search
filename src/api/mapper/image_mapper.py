@@ -1,5 +1,5 @@
 from asyncpg import Record
-from models import ImageMetadataModel, ImageTagModel
+from models import ImageMetadataModel
 from pydantic import HttpUrl
 
 
@@ -11,21 +11,19 @@ def image_metadata_db_to_model(metadata: Record) -> ImageMetadataModel:
         metadata (Record): The column values retrieved from the images and image_tags tables in the database.
     Returns:
         ImageMetadataModel: The data collection object.
+    Throws:
+        ValueError: If the input is None
+        ValidationError: If any field is not found in metadata or if the type is mismatched
     """
     if metadata is None:
         raise ValueError("cannot map None to model")
 
-    tags = metadata.get("tags", None)  # TODO: retrieve all image_tags rows from db
-    tags = tags.split(",") if tags else list()
-    tags = [ImageTagModel(id=0, image_uuid="", tag=tag, confidence=0) for tag in tags]
-
     model = ImageMetadataModel(
-        id=str(metadata.get("uuid", "")),
-        filename=metadata.get("filename", ""),
-        source_url=HttpUrl(metadata.get("source_url", "")),
-        source_domain=HttpUrl(metadata.get("source_domain", "")),
-        file_size=metadata.get("file_size", 0),
-        dimensions=metadata.get("dimensions", ""),
-        tags=tags,
+        id=str(metadata.get("uuid", None)),
+        filename=metadata.get("filename", None),
+        source_url=HttpUrl(metadata.get("source_url", None)),
+        source_domain=HttpUrl(metadata.get("source_domain", None)),
+        file_size=metadata.get("file_size", None),
+        dimensions=metadata.get("dimensions", None),
     )
     return model
