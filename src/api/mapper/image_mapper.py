@@ -1,5 +1,9 @@
+from io import BytesIO
+
 from asyncpg import Record
+from fastapi import UploadFile
 from models import ImageMetadataModel
+from PIL import Image
 from pydantic import HttpUrl
 
 
@@ -27,3 +31,18 @@ def image_metadata_db_to_model(metadata: Record) -> ImageMetadataModel:
         dimensions=metadata.get("dimensions", None),
     )
     return model
+
+async def async_upload_file_to_pil_image(file: UploadFile) -> Image.Image | None:
+    """Converts the uploaded file to PIL Image.
+
+    Args:
+        file (UploadFile): The file from HTTP Request.
+    Returns:
+        Image.Image: The object representing the image from the file.
+    """
+    try:
+        contents = await file.read()
+        image = Image.open(BytesIO(contents)).convert("RGB")
+        return image
+    finally:
+        await file.close()
