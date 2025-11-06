@@ -2,7 +2,7 @@ from typing import Sequence
 
 from chromadb import QueryResult
 from managers import ChromaConnectionManager
-from models import QueryHit, VectorEntry
+from models import QueryHit, VectorEntryModel
 
 
 class VectorRepository:
@@ -10,7 +10,7 @@ class VectorRepository:
 
     The ChromaDB vector database has the following schema:
 
-    VectorEntry {
+    VectorEntryModel {
         "id": uuid - The (unique) image UUIDv4 string. Used to find related metadata in with ImageRepository,
         "embedding": Sequence[float] - The 512 element normalized embedding produced by CLIP transformer model,
         "metadata": dict {
@@ -44,7 +44,7 @@ class VectorRepository:
     def __init__(self, conn: ChromaConnectionManager):
         self._collection = conn.collection
 
-    def insert(self, entry: VectorEntry) -> str:
+    def insert(self, entry: VectorEntryModel) -> str:
         """Inserts a single VectorEntry to the database. This function MUST be wrapped in try/except block,
         catching only happens here for improved visiblity by adding the function where error was thrown.
 
@@ -59,7 +59,7 @@ class VectorRepository:
         fetched_id = self._get_entries([entry.id])[0]
         return fetched_id
 
-    def batch_insert(self, entries: Sequence[VectorEntry]) -> list[str]:
+    def batch_insert(self, entries: Sequence[VectorEntryModel]) -> list[str]:
         """Inserts multiple VectorEntry models to the database. This function MUST be wrapped in try/except block,
         catching only happens here for improved visiblity by adding the function where error was thrown.
 
@@ -157,7 +157,7 @@ class VectorRepository:
         return result_pairs
 
     def _split_entries(
-        self, entries: Sequence[VectorEntry]
+        self, entries: Sequence[VectorEntryModel]
     ) -> tuple[list[str], list[Sequence[float]], list[dict[str, str]]]:
         """Splits all VectorEntry models into separate lists of uuids, embeddings, and metadatas. Since index ordering matters
         to upsert/add ChromaDB functions, this function MUST only be called with valid entries. Empty fields may cause order
@@ -181,7 +181,7 @@ class VectorRepository:
         return ids, embeddings, metadatas
 
     # TODO: Move this logic into field validation pydantic function
-    def _validate_entry(self, entry: VectorEntry) -> None:
+    def _validate_entry(self, entry: VectorEntryModel) -> None:
         """
         Validates the entry in provided and raises error on any invalid field. Field checks are done again
         as a safeguard if fields were modified from pydantic loading to now.
@@ -212,8 +212,8 @@ class VectorRepository:
 
     # TODO: Move this logic into field validation pydantic function
     def _get_valid_entries(
-        self, entries: Sequence[VectorEntry]
-    ) -> tuple[list[VectorEntry], list[ValueError]]:
+        self, entries: Sequence[VectorEntryModel]
+    ) -> tuple[list[VectorEntryModel], list[ValueError]]:
         """
         Returns a list of all entries that do not raise errors when called with `self._valid_entry`.
 
@@ -223,7 +223,7 @@ class VectorRepository:
             tuple[list[VectorEntry], list[ValueError]]: All valid models in entries and all errors to be logged
                 in calling function.
         """
-        valid_entries: list[VectorEntry] = []
+        valid_entries: list[VectorEntryModel] = []
         errors: list[ValueError] = []
         for entry in entries:
             try:
