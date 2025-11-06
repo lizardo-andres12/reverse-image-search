@@ -1,10 +1,9 @@
-import io
 import logging
 
 from fastapi import HTTPException, UploadFile
+from mapper import async_upload_file_to_pil_image
 from ml import CLIPModelService
 from models import SimilarImage
-from PIL import Image
 from repository import ImageRepository, VectorRepository
 
 logger = logging.getLogger(__name__)
@@ -34,7 +33,7 @@ class SearchController:
         Returns:
             SearchResponse: The top (limit) many keywords and images.
         """
-        image = await self._process_file_upload(file)
+        image = await async_upload_file_to_pil_image(file)
         embedding = self.clip_service.extract_image_features(image)
         similar_embeddings = self.vector_repository.query_similar(embedding, limit)
 
@@ -61,21 +60,6 @@ class SearchController:
             )
 
         return results
-
-    async def _process_file_upload(self, file: UploadFile) -> Image.Image:
-        """Converts the uploaded file to PIL Image.
-
-        Args:
-            file (UploadFile): The file from HTTP Request.
-        Returns:
-            Image.Image: The object representing the image from the file.
-        """
-        try:
-            contents = await file.read()
-            image = Image.open(io.BytesIO(contents)).convert("RGB")
-            return image
-        finally:
-            await file.close()
 
     """
     def _validate_upload(self, file: UploadFile):
