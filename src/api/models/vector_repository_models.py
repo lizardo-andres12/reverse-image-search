@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class VectorEntry(BaseModel):
+class VectorEntryModel(BaseModel):
     """Models one entry into the vector database"""
 
     id: str
